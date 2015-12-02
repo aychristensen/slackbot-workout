@@ -1,3 +1,5 @@
+import sys
+import signal
 import random
 import time
 import requests
@@ -16,7 +18,6 @@ USER_TOKEN_STRING =  os.environ['SLACK_USER_TOKEN_STRING']
 URL_TOKEN_STRING =  os.environ['SLACK_URL_TOKEN_STRING']
 
 HASH = "%23"
-
 
 # Configuration values to be set in setConfiguration
 class Bot:
@@ -288,6 +289,11 @@ def isOfficeHours(bot, time):
         return False
 
 def main():
+    
+    # Handle a SIGTERM so that killing the bot via other methods (like "docker stop")
+    # triggers the same functionality as Ctrl-C (KeyboardInterrupt)
+    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(0))
+
     bot = Bot()
 
     try:
@@ -311,7 +317,7 @@ def main():
                     # If debugging, check again in 5 seconds
                     time.sleep(5)
 
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, SystemExit):
         saveUsers(bot)
 
 
