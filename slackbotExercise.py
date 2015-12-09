@@ -67,13 +67,13 @@ class Bot:
             self.office_hours_begin = settings["officeHours"]["begin"]
             self.office_hours_end = settings["officeHours"]["end"]
             self.office_hours_signoffMessage = settings["officeHours"]["signoffMessage"]
+            self.office_hours_weekdays = settings["officeHours"]["onlyWeekdays"]
 
             self.debug = settings["debug"]
 
         self.post_URL = "https://" + self.team_domain + ".slack.com/services/hooks/slackbot?token=" + URL_TOKEN_STRING + "&channel=" + HASH + self.channel_name
 
 
-################################################################################
 '''
 Selects an active user from a list of users
 '''
@@ -153,7 +153,7 @@ def selectExerciseAndStartTime(bot):
     next_time_interval = selectNextTimeInterval(bot)
 
     next_lottery = datetime.datetime.now() + datetime.timedelta(seconds=next_time_interval)
-    if isOfficeHours(bot, next_lottery.time()):
+    if isOfficeHours(bot, next_lottery):
         minute_interval = next_time_interval/60
         exercise = selectExercise(bot)
         # Announcement String of next lottery time
@@ -273,11 +273,23 @@ def saveUsers(bot):
     with open('user_cache.save','wb') as f:
         pickle.dump(bot.user_cache,f)
 
-def isOfficeHours(bot, time):
+def isOfficeHours(bot, date):
     if not bot.office_hours_on:
         if bot.debug:
             print "not office hours"
         return True
+
+    if bot.office_hours_weekdays:
+        if date.isoweekday() in range (1, 6):
+            if bot.debug:
+                print "is weekday"
+            return True
+        else:
+            if bot.debug:
+                print "is not weekday"
+            return False
+
+    time = date.time()
 
     if time >= datetime.time(bot.office_hours_begin) and time <= datetime.time(bot.office_hours_end):
         if bot.debug:
@@ -298,7 +310,7 @@ def main():
 
     try:
         while True:
-            if isOfficeHours(bot, datetime.datetime.now().time()):
+            if isOfficeHours(bot, datetime.datetime.now()):
                 # Re-fetch config file if settings have changed
                 bot.setConfiguration()
 
